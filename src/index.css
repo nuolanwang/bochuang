@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-blue: #0045c4;
+  --color-brand-light-blue: #eff6ff;
+  --color-brand-cyan: #0ea5e9;
+  
+  --background-image-aurora: none;
+
+  --font-sans: "Inter", "system-ui", sans-serif;
+  --font-mono: "JetBrains Mono", "monospace";
+}
+
+@layer base {
+  body {
+    @apply bg-[#f8fafc] text-slate-900 antialiased selection:bg-brand-blue/10;
+  }
+}
+
+@utility glass {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+@utility glass-card {
+  @apply bg-white rounded-2xl shadow-sm border border-slate-200;
+}
+
+@utility glow-purple {
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.2);
+}
+
+@utility glow-blue {
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
