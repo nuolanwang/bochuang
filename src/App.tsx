@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProfileHeader } from './components/ProfileHeader';
 import { UserProfileBanner } from './components/UserProfileBanner';
@@ -21,6 +21,7 @@ import { BPSelectionModal } from './components/BPSelectionModal';
 import { ProjectDetails } from './components/ProjectDetails';
 import { BPPreviewModal } from './components/BPPreviewModal';
 import { ArchiveDashboard } from './components/ArchiveDashboard';
+import { PersonalGrowthTrajectory } from './components/PersonalGrowthTrajectory';
 import { IntelligenceStation } from './components/IntelligenceStation';
 import { CompetitionDetail } from './components/CompetitionDetail';
 import { UserProfileMenu } from './components/UserProfileMenu';
@@ -32,8 +33,9 @@ import { EnterpriseFormModal } from './components/EnterpriseFormModal';
 import { MaterialsLibrary } from './components/MaterialsLibrary';
 import { Workstation } from './components/Workstation';
 import { MyCollections } from './components/MyCollections';
+import { ProjectCreatePage } from './components/ProjectCreatePage';
 import { PersonalityData, TimelineEvent, GrowthDataPoint, Project, BusinessPlan } from './types';
-import { User, TrendingUp, Search, Bell, Settings, MessageSquare, Briefcase, Calendar, LayoutDashboard, HelpCircle, ChevronDown, RefreshCw, Upload, Globe, Check, X as CloseIcon, FileText, Sparkles, Building2, ShieldAlert, FileCheck, Layers, Award, CalendarDays, Plus, Archive, Bookmark } from 'lucide-react';
+import { User, TrendingUp, Search, Bell, Settings, MessageSquare, Briefcase, Calendar, LayoutDashboard, HelpCircle, ChevronDown, RefreshCw, Upload, Globe, Check, X as CloseIcon, FileText, Sparkles, Building2, ShieldAlert, FileCheck, Layers, Award, CalendarDays, Plus, Archive, Bookmark, Send, MoreHorizontal, Bot, Activity, Megaphone } from 'lucide-react';
 import { cn } from './lib/utils';
 
 const PERSONALITY_DATA: PersonalityData[] = [
@@ -106,7 +108,7 @@ const BP_MOCKS: BusinessPlan[] = [
   }
 ];
 
-type ViewMode = 'cockpit' | 'intelligence_station' | 'bp_edit' | 'workspace' | 'project_details' | 'competition_detail' | 'project_module_2' | 'enterprise_management' | 'materials_library' | 'workstation' | 'my_collections';
+type ViewMode = 'cockpit' | 'personal_growth_trajectory' | 'intelligence_station' | 'bp_edit' | 'workspace' | 'project_details' | 'competition_detail' | 'project_module_2' | 'enterprise_management' | 'materials_library' | 'workstation' | 'my_collections' | 'new_project_view';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
@@ -129,9 +131,32 @@ export default function App() {
   const [isReuploadOptionsOpen, setIsReuploadOptionsOpen] = useState(false);
   const [isOnlineBPSelectOpen, setIsOnlineBPSelectOpen] = useState(false);
   
+  // Pre-creation flow states
+  const [isCreateChoiceModalOpen, setIsCreateChoiceModalOpen] = useState(false);
+  const [isAiAnalyzingModalOpen, setIsAiAnalyzingModalOpen] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisStep, setAnalysisStep] = useState('');
+  const [uploadedFileInfo, setUploadedFileInfo] = useState<{ name: string; size: string } | null>(null);
+  const [projectCreatePrefilled, setProjectCreatePrefilled] = useState(true);
+  const appFileInputRef = useRef<HTMLInputElement>(null);
+  
   // Header / Profile menus
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isSidebarProfileOpen, setIsSidebarProfileOpen] = useState(false);
+  
+  // AI Chat states
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'assistant'; text: string; options?: boolean }>>([
+    {
+      sender: 'assistant',
+      text: '你好！我是 AI 助手，可以帮你分析项目、解答问题，或者起草内容。',
+      options: true
+    }
+  ]);
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   
   // Current active project
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -685,6 +710,59 @@ export default function App() {
     setActiveView('bp_edit');
   };
 
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isAiTyping]);
+
+  const handleSendChat = (inputText: string) => {
+    if (!inputText.trim()) return;
+    
+    // Add User Message
+    const userMsg = { sender: 'user' as const, text: inputText };
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatInput('');
+    setIsAiTyping(true);
+    
+    // Process response after delay
+    setTimeout(() => {
+      let responseText = '';
+      const textLower = inputText.toLowerCase();
+      
+      if (textLower.includes('分析') || textLower.includes('项目') || textLower.includes('列表')) {
+        const count = projectsList.length;
+        responseText = `📊 **当前项目库分析报告**：
+目前在您名下共检索到 **${count}** 个项目记录。
+
+1. **整体概览**：在建或草稿项目覆盖了智能化升级、分布式算力等高科技领域。
+2. **重点攻坚策略**：建议把首要资源配置在健康度较高及信息相对完整的项目上。您可以优先补充其他项目的商业计划书材料，提升估值和资质申请通过率。`;
+      } else if (textLower.includes('竞赛') || textLower.includes('推荐') || textLower.includes('方向')) {
+        responseText = `🏆 **前沿竞赛及北京亦庄政策推荐**：
+本季度北京亦庄开发区重点推荐参赛通道：
+
+1. **2024 北京亦庄创意创新大奖赛** (火热招募中)：
+   - 重点征集：新一代信息技术、高端装备制造、物联网。
+   - 政策扶持：百万级创业落地直接补贴、特设投融资直通车。
+2. **“互联网+” 创新创业赛**：
+   - 优先引荐入驻极速验证直通通道，配合您当前配置的个性大纲与AI预审系统效果更佳。`;
+      } else if (textLower.includes('摘要') || textLower.includes('起草') || textLower.includes('写')) {
+        responseText = `✍️ **企业级产品项目摘要范本**：
+您可以参考如下结构来快速提炼您的商业产品申报亮点：
+
+> **【项目定位】**：面向该领域核心场景解决痛点的高精尖智能应用系统。
+> **【技术壁垒】**：采用自研的多因子深度融合关联自适应建模，效率提升约 30% 以上。
+> **【商业模式】**：以 SaaS 订阅服务为主，提供离线部署与脱敏存证安全。
+您可以结合您特定的申报材料，直接在下方提问！`;
+      } else {
+        responseText = `您好！收到您的提问 "${inputText}"。我已经成功关联了行业专家经验库。您可以随时点击下面的推荐问题卡片，让我帮您进行项目列表分析，推荐最新北京亦庄竞赛动向或者起草高质量的项目摘要！`;
+      }
+      
+      setChatMessages(prev => [...prev, { sender: 'assistant' as const, text: responseText }]);
+      setIsAiTyping(false);
+    }, 850);
+  };
+
   const handleCopyProject = (project: Project) => {
     const nextId = `prj-${Date.now()}`;
     const newProject: Project = {
@@ -733,7 +811,54 @@ export default function App() {
   };
 
   const handleCreateProject = () => {
-    setIsProjectModalOpen(true);
+    setIsCreateChoiceModalOpen(true);
+  };
+
+  const handleAppFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Set uploaded file info to pass down to ProjectCreatePage
+    setUploadedFileInfo({
+      name: file.name,
+      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+    });
+
+    // Close choice modal and trigger AI loading overlay
+    setIsCreateChoiceModalOpen(false);
+    setIsAiAnalyzingModalOpen(true);
+    setAnalysisProgress(0);
+    setAnalysisStep('准备执行项目申报书解析与宁波地方政策适配度稽核...');
+
+    let currentProgress = 0;
+    const interval = setInterval(() => {
+      currentProgress += Math.floor(Math.random() * 8) + 5;
+      if (currentProgress >= 100) {
+        currentProgress = 100;
+        clearInterval(interval);
+        setAnalysisProgress(100);
+        setAnalysisStep('数智解析建模比对成功！即刻载入申报控制台...');
+        
+        setTimeout(() => {
+          setIsAiAnalyzingModalOpen(false);
+          setProjectCreatePrefilled(true);
+          setActiveView('new_project_view');
+        }, 800);
+      } else {
+        setAnalysisProgress(currentProgress);
+        if (currentProgress < 15) {
+          setAnalysisStep('正在执行宁波地方工程政策合规模型多因子安全初筛...');
+        } else if (currentProgress < 35) {
+          setAnalysisStep('正在定位并解构「申报项目名」与「新实体企业申报主体」名...');
+        } else if (currentProgress < 60) {
+          setAnalysisStep('正在智能识别拟解决关键技术规划与宁波市本地相融性要素...');
+        } else if (currentProgress < 85) {
+          setAnalysisStep('正在安全导入带头人及骨干人才技术成果与各阶段投资指标...');
+        } else {
+          setAnalysisStep('正在对齐及预设未来预期经济发展成效等高精度表格填报项...');
+        }
+      }
+    }, 180);
   };
 
   const handleViewProject = (project: Project) => {
@@ -763,6 +888,10 @@ export default function App() {
             isOpen={isProjectModalOpen} 
             onClose={() => setIsProjectModalOpen(false)} 
             onlinePlans={bpPlans}
+            onSubmit={() => {
+              setIsProjectModalOpen(false);
+              handleRegisterQuick();
+            }}
           />
         )}
         {isEditorOpen && (
@@ -816,7 +945,7 @@ export default function App() {
           <CompetitionDetail 
             onBack={() => setActiveView(competitionSourceView)} 
             onRegisterOfficial={() => setIsProjectModalOpen(true)}
-            onRegisterQuick={handleRegisterQuick}
+            onRegisterQuick={() => setIsProjectModalOpen(true)}
           />
         )}
       </AnimatePresence>
@@ -838,7 +967,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* Left Sidebar - Desktop only */}
-      <aside className="hidden lg:flex flex-col w-72 h-screen sticky top-0 bg-white/30 backdrop-blur-md border-r border-slate-200/40 p-6 shrink-0 z-30 overflow-y-auto">
+      <aside className="hidden lg:flex flex-col w-72 h-screen sticky top-0 bg-white/30 backdrop-blur-md border-r border-slate-200/40 p-6 shrink-0 z-30 overflow-visible">
         {/* Logo Brand section */}
         <div className="flex items-center gap-3 mb-8 shrink-0">
           <div className="w-12 h-12 relative bg-white rounded-2xl flex items-center justify-center p-2 shadow-lg group cursor-pointer overflow-hidden border border-slate-100 shrink-0">
@@ -853,132 +982,185 @@ export default function App() {
           </div>
         </div>
 
-        {/* Taskbar Navigation menu stacked vertically */}
-        <div className="flex-1 flex flex-col gap-1.5 p-1.5 bg-slate-100/85 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm overflow-y-auto select-none">
-          <button 
-            onClick={() => {
-              setActiveView('cockpit');
-              setActiveTab('profile');
-            }}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer text-left",
-              activeView === 'cockpit' && activeTab === 'profile'
-                ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-            )}
-          >
-            <User className="w-4 h-4 text-[#0045c4]" />
-            <span>个人档案</span>
-          </button>
+        {/* Taskbar Navigation menu stacked vertically - styled grey with neutral darker selected states and uniform grey icons */}
+        <div className="flex-1 flex flex-col gap-4 py-1 select-none overflow-y-auto" id="sidebar_nav_wrapper">
+          {/* Group 1: AI 工作台 */}
+          <div className="space-y-1">
+            <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none leading-none">
+              AI 工作台
+            </div>
+            <button 
+              onClick={() => setActiveView('workstation')}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                activeView === 'workstation' 
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <Sparkles className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>AI 工作台</span>
+            </button>
+          </div>
 
-          <button 
-            onClick={() => {
-              setActiveView('cockpit');
-              setActiveTab('growth');
-            }}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer text-left",
-              activeView === 'cockpit' && activeTab === 'growth'
-                ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-            )}
-          >
-            <TrendingUp className="w-4 h-4 text-[#0045c4]" />
-            <span>资源推荐</span>
-          </button>
+          {/* Group 2: 协作 */}
+          <div className="space-y-1">
+            <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none leading-none">
+              协作
+            </div>
+            <button 
+              onClick={() => setActiveView('workspace')}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                (activeView === 'workspace' || activeView === 'new_project_view' || activeView === 'project_details')
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <Briefcase className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>项目管理</span>
+            </button>
+            <button 
+              onClick={() => setActiveView('bp_edit')}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                activeView === 'bp_edit' 
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>在线编辑BP</span>
+            </button>
+          </div>
 
-          <button 
-            onClick={() => setActiveView('workstation')}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer text-left",
-              activeView === 'workstation' 
-                ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
-                : "text-slate-600 hover:text-[#0045c4] hover:bg-white/40"
-            )}
-          >
-            <Sparkles className="w-4 h-4 text-[#0045c4] animate-pulse" />
-            <span>AI 工作台</span>
-          </button>
+          {/* Group 3: 我的 */}
+          <div className="space-y-1">
+            <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none leading-none">
+              我的
+            </div>
+            <button 
+              onClick={() => {
+                setActiveView('cockpit');
+                setActiveTab('profile');
+              }}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                activeView === 'cockpit' && activeTab === 'profile'
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <User className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>个人档案</span>
+            </button>
+            <button 
+              onClick={() => {
+                setActiveView('personal_growth_trajectory');
+              }}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                activeView === 'personal_growth_trajectory'
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <Activity className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>个人成长轨迹</span>
+            </button>
+            <button 
+              onClick={() => {
+                setActiveView('cockpit');
+                setActiveTab('growth');
+              }}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                activeView === 'cockpit' && activeTab === 'growth'
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <Megaphone className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>资源推荐</span>
+            </button>
+            <button 
+              onClick={() => setActiveView('enterprise_management')}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                activeView === 'enterprise_management' 
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>企业管理</span>
+            </button>
+            <button 
+              onClick={() => setActiveView('materials_library')}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                activeView === 'materials_library' 
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <Archive className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>我的材料库</span>
+            </button>
+            <button 
+              onClick={() => setActiveView('my_collections')}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer text-left",
+                activeView === 'my_collections' 
+                  ? "bg-slate-200/80 text-slate-800 font-extrabold shadow-xs" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/30"
+              )}
+            >
+              <Bookmark className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>我的收藏</span>
+            </button>
+          </div>
+        </div>
 
-          <button 
-            onClick={() => setActiveView('workspace')}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer text-left",
-              activeView === 'workspace' 
-                ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-            )}
+        {/* Dynamic User profile sidebar module at the bottom */}
+        <div className="mt-auto pt-3 relative shrink-0">
+          <div 
+            onClick={() => setIsSidebarProfileOpen(!isSidebarProfileOpen)}
+            className="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-100/80 transition-all cursor-pointer group"
           >
-            <Briefcase className="w-4 h-4 text-slate-600" />
-            <span>项目管理</span>
-          </button>
+            <div className="flex items-center gap-3">
+              {/* Round avatar */}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0045c4] to-[#0A66FF] flex items-center justify-center text-white font-black text-sm border-2 border-white shadow-sm select-none shrink-0">
+                王
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="font-bold text-slate-800 text-xs tracking-tight">王发</span>
+              </div>
+            </div>
+            
+            <div className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-200/40 shrink-0">
+              <MoreHorizontal className="w-4 h-4" />
+            </div>
+          </div>
 
-          <button 
-            onClick={() => setActiveView('bp_edit')}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer text-left",
-              activeView === 'bp_edit' 
-                ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
+          <AnimatePresence>
+            {isSidebarProfileOpen && (
+              <div className="absolute bottom-16 left-0 right-0 z-50">
+                <UserProfileMenu 
+                  align="bottom-left"
+                  isOpen={isSidebarProfileOpen} 
+                  onClose={() => setIsSidebarProfileOpen(false)} 
+                  onLogout={() => {
+                    localStorage.setItem('isLoggedIn', 'false');
+                    localStorage.setItem('onboardingCompleted', 'false');
+                    setIsLoggedIn(false);
+                    setOnboardingCompleted(false);
+                    setIsSidebarProfileOpen(false);
+                  }}
+                />
+              </div>
             )}
-          >
-            <FileText className="w-4 h-4 text-slate-600" />
-            <span>在线编辑BP</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveView('enterprise_management')}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer text-left",
-              activeView === 'enterprise_management' 
-                ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-            )}
-          >
-            <Building2 className="w-4 h-4 text-[#0045c4]" />
-            <span>企业管理</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveView('project_module_2')}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer group/item text-left",
-              activeView === 'project_module_2' 
-                ? "bg-white text-amber-650 shadow-sm font-black border border-amber-100" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-            )}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4 text-amber-500 group-hover/item:scale-110 transition-transform shrink-0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 3.93 3H2a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" fill="currentColor" fillOpacity="0.15" />
-            </svg>
-            <span>项目模块2</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveView('materials_library')}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer group/item text-left",
-              activeView === 'materials_library' 
-                ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
-                : "text-slate-600 hover:text-[#0045c4] hover:bg-white/40"
-            )}
-          >
-            <Archive className="w-4 h-4 text-slate-650 group-hover/item:text-[#0045c4]" />
-            <span>我的材料库</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveView('my_collections')}
-            className={cn(
-              "w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer group/item text-left",
-              activeView === 'my_collections' 
-                ? "bg-white text-rose-600 shadow-sm font-black border border-rose-100" 
-                : "text-slate-600 hover:text-[#0045c4] hover:bg-white/40"
-            )}
-          >
-            <Bookmark className="w-4 h-4 text-rose-500 group-hover/item:scale-115 transition-transform text-rose-500" />
-            <span>我的收藏</span>
-          </button>
+          </AnimatePresence>
         </div>
       </aside>
 
@@ -1023,6 +1205,21 @@ export default function App() {
 
               <button 
                 onClick={() => {
+                  setActiveView('personal_growth_trajectory');
+                }}
+                className={cn(
+                  "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer whitespace-nowrap",
+                  activeView === 'personal_growth_trajectory'
+                    ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
+                )}
+              >
+                <Layers className="w-4 h-4 text-[#0045c4]" />
+                <span>个人成长轨迹</span>
+              </button>
+
+              <button 
+                onClick={() => {
                   setActiveView('cockpit');
                   setActiveTab('growth');
                 }}
@@ -1035,6 +1232,22 @@ export default function App() {
               >
                 <TrendingUp className="w-4 h-4 text-[#0045c4]" />
                 <span>资源推荐</span>
+              </button>
+
+              <button 
+                onClick={() => setIsAiChatOpen(true)}
+                className={cn(
+                  "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer whitespace-nowrap",
+                  isAiChatOpen 
+                    ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
+                )}
+              >
+                <div className="flex items-center gap-1.5">
+                  <MessageSquare className="w-4 h-4 text-[#0A66FF]" />
+                  <span>AI 对话</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                </div>
               </button>
 
               <button 
@@ -1055,7 +1268,7 @@ export default function App() {
                 onClick={() => setActiveView('workspace')}
                 className={cn(
                   "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-250 active:scale-95 cursor-pointer whitespace-nowrap",
-                  activeView === 'workspace' 
+                  (activeView === 'workspace' || activeView === 'new_project_view' || activeView === 'project_details')
                     ? "bg-white text-[#0045c4] shadow-sm font-black border border-slate-100" 
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
                 )}
@@ -1266,6 +1479,13 @@ export default function App() {
                             )
                         )}
 
+                        {activeView === 'personal_growth_trajectory' && (
+                            <PersonalGrowthTrajectory 
+                                timelineEvents={TIMELINE_EVENTS}
+                                onStartAssessment={() => setIsAssessmentOpen(true)}
+                            />
+                        )}
+
                         {activeView === 'intelligence_station' && (
                             <IntelligenceStation 
                                 projects={projectsList}
@@ -1301,6 +1521,21 @@ export default function App() {
                                   />
                                 </section>
                             </div>
+                        )}
+
+                        {activeView === 'new_project_view' && (
+                            <ProjectCreatePage 
+                                isPrefilled={projectCreatePrefilled}
+                                uploadedFileName={uploadedFileInfo?.name}
+                                uploadedFileSize={uploadedFileInfo?.size}
+                                onBack={() => setActiveView('workspace')}
+                                onSubmit={(newProjData) => {
+                                    setProjectsList(prev => [newProjData as Project, ...prev]);
+                                    setActiveView('workspace');
+                                    setShowSuccessToast(true);
+                                    setTimeout(() => setShowSuccessToast(false), 3000);
+                                }}
+                            />
                         )}
 
                         {activeView === 'project_details' && currentProject && (
@@ -1365,13 +1600,319 @@ export default function App() {
         }}
       />
 
+      {/* Floating AI Assistant Box with Glow */}
       <motion.button 
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-brand-blue rounded-full flex items-center justify-center text-white shadow-2xl glow-blue z-50 overflow-hidden"
+        onClick={() => setIsAiChatOpen(prev => !prev)}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-8 right-8 bg-white border border-slate-200/80 rounded-full px-5 py-3.5 flex items-center gap-3 shadow-[0_12px_40px_rgba(10,102,255,0.18)] hover:shadow-[0_16px_48px_rgba(10,102,255,0.28)] transition-all z-[90] select-none group focus:outline-none"
+        style={{
+          boxShadow: '0 10px 30px rgba(10, 102, 255, 0.15), 0 0 15px rgba(10, 102, 255, 0.05)'
+        }}
       >
-        <MessageSquare className="w-6 h-6" />
+        <div className="w-8 h-8 rounded-full bg-[#0A66FF] flex items-center justify-center text-white shrink-0 shadow-[0_0_12px_rgba(10,102,255,0.45)] group-hover:scale-110 transition-transform">
+          <Bot className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-xs font-black tracking-wide text-slate-700">AI 助手</span>
+        <span className="flex h-2 w-2 relative">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
       </motion.button>
+
+      {/* Slide-out AI Dialog Panel */}
+      <AnimatePresence>
+        {isAiChatOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAiChatOpen(false)}
+              className="fixed inset-0 bg-slate-900/10 backdrop-blur-[0.5px] z-[95]"
+            />
+
+            {/* Panel */}
+            <motion.div
+              initial={{ x: '100%', opacity: 0.95 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed top-0 right-0 h-screen w-full sm:w-[440px] bg-white border-l border-slate-100 shadow-[20px_0_50px_rgba(0,0,0,0.12)] z-[100] flex flex-col overflow-hidden"
+              id="ai_chat_dialog_panel"
+            >
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#0A66FF] flex items-center justify-center text-white shrink-0 shadow-[0_0_14px_rgba(10,102,255,0.3)]">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5 leading-none">AI 助手</h3>
+                    <div className="flex items-center gap-1 mt-1.5 leading-none">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] text-slate-400 font-bold">在线 · 随时为您解答</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsAiChatOpen(false)}
+                    className="w-8 h-8 rounded-xl border border-slate-200 flex items-center justify-center cursor-pointer text-slate-450 hover:text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95"
+                    title="关闭"
+                  >
+                    <span className="text-sm font-semibold">✕</span>
+                  </button>
+                  <button 
+                    className="w-8 h-8 rounded-xl border border-slate-200 flex items-center justify-center cursor-pointer text-slate-400 hover:text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Messages Area */}
+              <div className="flex-1 p-5 overflow-y-auto space-y-5 bg-slate-50/50 scrollbar-thin">
+                {chatMessages.map((msg, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                  >
+                    {/* Icon badge */}
+                    {msg.sender === 'assistant' ? (
+                      <div className="w-8 h-8 rounded-full bg-[#0A66FF] flex items-center justify-center text-white shrink-0 shadow-sm">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 shrink-0 font-bold text-xs select-none">
+                        我
+                      </div>
+                    )}
+
+                    {/* Content Bubble */}
+                    <div className="space-y-3 max-w-[80%]">
+                      <div className={cn(
+                        "p-4 rounded-2xl text-xs font-bold leading-relaxed whitespace-pre-wrap shadow-sm",
+                        msg.sender === 'user' 
+                          ? "bg-[#0A66FF] text-white rounded-tr-none" 
+                          : "bg-white text-slate-700 border border-slate-100 rounded-tl-none"
+                      )}>
+                        {msg.text}
+                      </div>
+
+                      {/* Custom suggestion pills attached to Assistant's Greeting Message */}
+                      {msg.options && (
+                        <div className="flex flex-col gap-2 pt-1 animate-fade-in">
+                          <button 
+                            onClick={() => handleSendChat('📋 分析项目列表')}
+                            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[11px] font-bold text-slate-700 shadow-sm transition-all hover:border-[#0A66FF]/40 text-left active:scale-95"
+                          >
+                            <span>📋</span>
+                            <span>分析项目列表</span>
+                          </button>
+                          <button 
+                            onClick={() => handleSendChat('🏆 推荐竞赛方向')}
+                            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[11px] font-bold text-slate-700 shadow-sm transition-all hover:border-[#0A66FF]/40 text-left active:scale-95"
+                          >
+                            <span>🏆</span>
+                            <span>推荐竞赛方向</span>
+                          </button>
+                          <button 
+                            onClick={() => handleSendChat('✍️ 写项目摘要')}
+                            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[11px] font-bold text-slate-700 shadow-sm transition-all hover:border-[#0A66FF]/40 text-left active:scale-95"
+                          >
+                            <span>✍️</span>
+                            <span>写项目摘要</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {isAiTyping && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#0A66FF] flex items-center justify-center text-white shrink-0 shadow-sm animate-pulse">
+                      <Sparkles className="w-4 h-4 animate-spin text-white" />
+                    </div>
+                    <div className="bg-white text-slate-400 border border-slate-100 p-4 rounded-2xl rounded-tl-none text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                      <span>AI 正在高速解算中</span>
+                      <span className="flex gap-0.5">
+                        <span className="w-1 h-1 bg-slate-350 rounded-full animate-bounce delay-100" />
+                        <span className="w-1 h-1 bg-slate-350 rounded-full animate-bounce delay-200" />
+                        <span className="w-1 h-1 bg-slate-350 rounded-full animate-bounce delay-300" />
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="p-4 border-t border-slate-150/60 bg-white shrink-0 flex items-center gap-2.5">
+                <input 
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSendChat(chatInput);
+                    }
+                  }}
+                  placeholder="输入问题，回车发送..."
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 outline-none focus:border-[#0055e0] focus:bg-white transition-all shadow-inner"
+                />
+                <button 
+                  onClick={() => handleSendChat(chatInput)}
+                  disabled={!chatInput.trim()}
+                  className="w-10 h-10 bg-[#0A66FF] hover:bg-[#0055e0] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/10 transition-all shrink-0 active:scale-95 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Hidden file input for file picker creation routing */}
+      <input 
+        type="file" 
+        ref={appFileInputRef} 
+        onChange={handleAppFileChange} 
+        style={{ display: 'none' }} 
+        accept=".doc,.docx,.pdf,.txt" 
+      />
+
+      {/* Choose blank vs file upload creation modal */}
+      <AnimatePresence>
+        {isCreateChoiceModalOpen && (
+          <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsCreateChoiceModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden p-8 border border-slate-100"
+            >
+              <button 
+                onClick={() => setIsCreateChoiceModalOpen(false)}
+                className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+
+              <div className="text-center mb-6">
+                <h3 className="text-base font-bold text-slate-800">新建申报项目</h3>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <button 
+                  onClick={() => appFileInputRef.current?.click()}
+                  className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-[#0A66FF]/30 hover:bg-white transition-all group cursor-pointer text-left w-full"
+                >
+                  <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#0A66FF] group-hover:bg-[#0A66FF] group-hover:text-white transition-all">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-800 text-xs group-hover:text-[#0A66FF] transition-colors">上传申报书开展数智解析</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">支持 Word/PDF • AI 极速预填</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setIsCreateChoiceModalOpen(false);
+                    setProjectCreatePrefilled(false);
+                    setUploadedFileInfo(null);
+                    setActiveView('new_project_view');
+                  }}
+                  className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-[#0A66FF]/30 hover:bg-white transition-all group cursor-pointer text-left w-full"
+                >
+                  <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 group-hover:bg-slate-600 group-hover:text-white transition-all">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-800 text-xs group-hover:text-slate-600 transition-colors">新建空白申报书</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">从零开始录入申报要素自律建模</p>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Analyzing Progress Modal Overlay */}
+      <AnimatePresence>
+        {isAiAnalyzingModalOpen && (
+          <div className="fixed inset-0 z-[700] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 border border-slate-100 overflow-hidden"
+            >
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-[#0A66FF] animate-pulse" />
+
+              <div className="flex flex-col items-center text-center space-y-5">
+                <div className="relative w-20 h-20 flex items-center justify-center mt-2">
+                  <div className="absolute inset-0 rounded-full border-4 border-blue-100 animate-ping opacity-60" />
+                  <div className="absolute inset-2 rounded-full border-4 border-slate-100 animate-spin" style={{ animationDuration: '4s' }} />
+                  <div className="absolute inset-4 bg-gradient-to-tr from-[#0A66FF] to-indigo-600 rounded-full flex items-center justify-center text-white shadow-xl">
+                    <Sparkles className="w-6 h-6 animate-pulse" />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 w-full">
+                  <h4 className="text-sm font-bold text-slate-800">
+                    甬江线上工程 • 高端数智比对
+                  </h4>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    AI 深度合规性稽核及预填中...
+                  </p>
+                </div>
+
+                <div className="w-full space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-150">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                    <span className="truncate max-w-[180px]">文件: {uploadedFileInfo?.name}</span>
+                    <span className="text-[#0A66FF]">{analysisProgress}%</span>
+                  </div>
+                  
+                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#0A66FF] to-indigo-600 transition-all duration-100"
+                      style={{ width: `${analysisProgress}%` }}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-semibold justify-center min-h-[32px] mt-2 leading-relaxed">
+                    <RefreshCw className="w-3.5 h-3.5 text-[#0A66FF] animate-spin shrink-0" />
+                    <span>{analysisStep}</span>
+                  </div>
+                </div>
+
+                <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider bg-slate-100 px-3 py-1 rounded">
+                  宁波智运中心提供全程沙箱数据脱敏保障
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

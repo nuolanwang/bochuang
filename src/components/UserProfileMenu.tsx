@@ -9,9 +9,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onLogout?: () => void;
+  align?: 'top-right' | 'bottom-left';
 }
 
-export const UserProfileMenu: React.FC<Props> = ({ isOpen, onClose, onLogout }) => {
+export const UserProfileMenu: React.FC<Props> = ({ isOpen, onClose, onLogout, align = 'top-right' }) => {
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showWeChatModal, setShowWeChatModal] = useState(false);
   const [phone, setPhone] = useState('185****4900');
@@ -45,10 +46,13 @@ export const UserProfileMenu: React.FC<Props> = ({ isOpen, onClose, onLogout }) 
       />
       
       <motion.div
-        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+        initial={{ opacity: 0, y: align === 'bottom-left' ? -10 : 10, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-        className="absolute top-14 right-0 w-[240px] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[1002] py-4"
+        exit={{ opacity: 0, y: align === 'bottom-left' ? -10 : 10, scale: 0.95 }}
+        className={cn(
+          "absolute w-[240px] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[1002] py-4",
+          align === 'bottom-left' ? "bottom-full mb-3 left-0" : "top-14 right-0"
+        )}
       >
         {/* User Header */}
         <div className="px-6 py-4 flex items-center gap-3 border-b border-slate-50 mb-2">

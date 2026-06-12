@@ -8,9 +8,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onlinePlans: BusinessPlan[];
+  onSubmit?: () => void;
 }
 
-export const ProjectFormModal: React.FC<Props> = ({ isOpen, onClose, onlinePlans }) => {
+export const ProjectFormModal: React.FC<Props> = ({ isOpen, onClose, onlinePlans, onSubmit }) => {
   const [isBPModalOpen, setIsBPModalOpen] = useState(false);
   const [selectedBP, setSelectedBP] = useState<BusinessPlan | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -89,16 +90,9 @@ export const ProjectFormModal: React.FC<Props> = ({ isOpen, onClose, onlinePlans
                         <Sparkles className="w-3.5 h-3.5" />
                         <span className="text-[11px] font-bold">AI 智能识别</span>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900">上传商业计划书 (BP) 自动填表 (推荐)</h3>
+                    <h3 className="text-xl font-bold text-slate-900">上传项目申报书</h3>
                     <p className="text-sm text-slate-500">系统将通过 AI 技术识别您的 BP 文件内容并自动填充下方表单项</p>
                   </div>
-                  <button 
-                    onClick={() => setIsBPModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-blue/5 text-brand-blue border border-brand-blue/20 rounded-lg text-sm font-bold hover:bg-brand-blue/10 transition-all shadow-sm"
-                  >
-                    <FileText className="w-4 h-4" />
-                    选择在线 BP
-                  </button>
                </div>
                
                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-12 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 hover:border-brand-blue/30 transition-all cursor-pointer group">
@@ -343,7 +337,18 @@ export const ProjectFormModal: React.FC<Props> = ({ isOpen, onClose, onlinePlans
           {/* Footer Actions */}
           <div className="p-6 border-t border-slate-100 flex justify-end gap-4 sticky bottom-0 bg-white">
             <button onClick={onClose} className="px-8 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-all">取消</button>
-            <button className="px-8 py-3 bg-brand-blue text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:bg-brand-blue/90 transition-all">提交申请</button>
+            <button 
+              onClick={() => {
+                if (onSubmit) {
+                  onSubmit();
+                } else {
+                  onClose();
+                }
+              }}
+              className="px-8 py-3 bg-brand-blue text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:bg-brand-blue/90 transition-all"
+            >
+              提交申请
+            </button>
           </div>
         </motion.div>
 

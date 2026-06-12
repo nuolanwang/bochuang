@@ -470,43 +470,33 @@ export function Workstation() {
         
         {subActiveTab === 'home' && (
           <>
-            {/* Upper header with Super Agent Banner & Intro (淡蓝白 Apple-style) */}
-            <div className="bg-gradient-to-br from-[#F5F9FF] to-[#FFFFFF] border border-[#DDE8F5] rounded-[2rem] p-8 md:p-10 shadow-[0_12px_40px_rgba(34,86,160,0.04)] relative overflow-hidden" id="agent_header_banner">
-              {/* Decorative background light bubbles */}
-              <div className="absolute top-[-100px] right-[-100px] w-[300px] h-[300px] bg-blue-100/30 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-[-100px] left-[-50px] w-[200px] h-[200px] bg-slate-100/40 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6" id="banner_content">
-                <div className="space-y-3 max-w-2xl">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#EAF2FF] text-[#0A66FF] text-[11px] font-black tracking-widest uppercase rounded-full">
-                    <span className="w-1.5 h-1.5 bg-[#0A66FF] rounded-full animate-ping" />
-                    Super Agent 工作台
-                  </div>
-                  
-                  <h1 className="text-2xl md:text-3.5xl font-black text-slate-900 tracking-tight leading-tight">
-                    嘿，我是你的 <span className="text-[#0A66FF] border-b-2 border-dashed border-[#0A66FF]/40 pb-1">{selectedScenario}</span> 超级智能体
+            {/* Immersive Tencent Yuanbao style workspace header */}
+            <div className="w-full max-w-4xl mx-auto text-center" id="agent_header_banner">
+              {messages.length <= 1 ? (
+                <div className="flex flex-col items-center justify-center pt-12 pb-6 text-center select-none animate-fade-in">
+                  <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight font-sans mb-3 mt-4 select-none">
+                    Hi，今天从哪里开始
                   </h1>
-                  <p className="text-slate-550 font-bold text-sm">
-                    你今天想让我帮你在商业计划书、可行性分析报告或投资申请决策上做些什么？
+
+                  <p className="text-slate-500 font-semibold text-sm max-w-lg leading-relaxed mb-6">
+                    我是你的团队决策 AI 助手。你可以直接向我提问，或者在下方上传项目计划书等文档，我会为你进行精准的项目可行性诊断与行业趋势评估。
                   </p>
                 </div>
-
-                {/* Super Agent Avatar/Image */}
-                <div className="flex items-center gap-4 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-blue-100 shadow-sm" id="agent_avatar_card">
-                  <div className="w-16 h-16 bg-[#F0F6FF] rounded-2xl flex items-center justify-center relative shadow-inner">
-                    <Bot className="w-9 h-9 text-[#0A66FF] animate-bounce" style={{ animationDuration: '3s' }} />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
+              ) : (
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#0A66FF]" />
+                    <span className="text-sm font-black text-slate-850">正在与「{selectedScenario}助理」进行深度会话</span>
                   </div>
-                  <div>
-                    <p className="text-xs font-black text-slate-400 tracking-wider">智能决策体已锁定</p>
-                    <p className="text-sm font-black text-slate-800">Bochuang Air-Agent-1</p>
-                    <p className="text-[10px] text-[#12A870] font-bold mt-0.5">当前并发连接：安全只读合规</p>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[11px] text-slate-400 font-bold">超级算子安全合规</span>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* --- Main Interactive Prompting Area --- */}
-              <div className="mt-8 bg-white/90 border border-[#DDE8F5] rounded-2xl p-4 shadow-sm relative focus-within:ring-2 focus-within:ring-[#8BBEFF]/40 transition-all" id="super_prompt_box">
+              <div className="mt-2 bg-white border border-slate-200/80 rounded-[1.5rem] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.03)] relative focus-within:ring-2 focus-within:ring-[#8BBEFF]/40 transition-all text-left" id="super_prompt_box">
                 
                 {/* Badge indicator inside prompt box */}
                 <div className="flex items-center gap-2 mb-3">
@@ -761,91 +751,11 @@ export function Workstation() {
 
             </div>
 
-            {/* Grid structure: Left side assistants, Right side dialogue / analysis logs */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start" id="under_dashboard_split">
-              
-              {/* Left 4 Cols: My Assistances (我的助理) list echoing Image 1 */}
-              <div className="lg:col-span-4" id="my_assistants_rail">
-                <div className="bg-white border border-[#DDE8F5] rounded-[1.5rem] p-5 shadow-[0_4px_20px_rgba(34,86,160,0.02)] space-y-4 hover:shadow-[0_8px_30px_rgba(34,86,160,0.04)] transition-all">
-                  <div className="flex items-center justify-between border-b border-slate-100/80 pb-3">
-                    <div>
-                      <h3 className="text-sm font-black text-slate-800">我的助理</h3>
-                      <p className="text-[10px] text-slate-400 font-extrabold uppercase mt-0.5 tracking-wider">Tengo Specialized Agent Core</p>
-                    </div>
-                    <span className="text-[10px] font-bold text-[#0A66FF] bg-[#EAF2FF] px-2 py-0.5 rounded shadow-sm">3个激活</span>
-                  </div>
-
-                  <div className="space-y-3.5">
-                    {assistants.map(ast => {
-                      const isActive = activeAgentId === ast.id;
-                      return (
-                        <div
-                          key={ast.id}
-                          onClick={() => {
-                            setActiveAgentId(ast.id);
-                            setInputText(`切换至「${ast.name}」：我想启动关于项目书更深维度的自诊断。`);
-                          }}
-                          className={cn(
-                            "p-3.5 rounded-xl border transition-all cursor-pointer flex gap-3 select-none relative overflow-hidden",
-                            isActive 
-                              ? "bg-[#F3F8FF]/85 border-[#BFD8FF] shadow-sm ring-1 ring-[#0A66FF]/20" 
-                              : "bg-[#FBFDFF] border-slate-150 hover:bg-slate-55 hover:border-slate-300"
-                          )}
-                        >
-                          {/* Active bubble bar on left */}
-                          {isActive && (
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#0A66FF]" />
-                          )}
-
-                          {/* Avatar with placeholder initials */}
-                          <div className="w-10 h-10 bg-gradient-to-br from-[#0A66FF] to-[#0045c4] rounded-lg flex items-center justify-center shrink-0 border border-blue-200/50 text-white font-black text-xs select-none">
-                            {ast.name.substring(0, 1)}
-                          </div>
-
-                          <div className="space-y-1 flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-xs font-black text-slate-800 truncate">{ast.name}</span>
-                              <span className={cn("text-[8px] font-black tracking-wider uppercase shrink-0 whitespace-nowrap", ast.statusColor)}>{ast.status}</span>
-                            </div>
-                            
-                            <p className="text-[10px] font-bold text-slate-550 truncate leading-none">{ast.title}</p>
-                            <p className="text-[9px] text-slate-400 line-clamp-2 leading-tight">{ast.description}</p>
-                            
-                            {/* Skills tags */}
-                            <div className="flex flex-wrap items-center gap-1 pt-1">
-                              {ast.skills.slice(0, 2).map((sk, sIdx) => (
-                                <span key={sIdx} className="text-[8px] px-1.5 py-0.5 bg-slate-100 text-slate-550 rounded font-bold">
-                                  {sk}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="bg-slate-50 border border-dashed border-slate-200 p-2.5 rounded-xl flex items-center justify-center text-[10px] text-slate-500 font-bold hover:border-[#0A66FF]/30 hover:text-[#0A66FF] hover:bg-white transition-all cursor-pointer">
-                    <span>+ 添加更多行业算法助理</span>
-                  </div>
-                </div>
-
-                {/* Secure verify badge */}
-                <div className="mt-4 bg-gradient-to-tr from-[#F8FAFC] to-[#F1F5F9] border border-slate-200 rounded-[1.25rem] p-4 text-[10px] text-slate-550 font-medium space-y-2 shadow-sm">
-                  <h4 className="font-extrabold text-[#102033] flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
-                     <ShieldAlert className="w-3.5 h-3.5 text-[#0A66FF]" />
-                     防篡改与云链校对
-                  </h4>
-                  <p className="leading-relaxed">
-                    基于博创网 (BoChuang) 国家级赛区要素全景链路，对本节点及后续生成的《投资评估诊断报告》均集成有防篡改安全水印哈希 (MD5 Ledger Verify)。
-                  </p>
-                </div>
-              </div>
-
-              {/* Right 8 Cols: Dialogue log and full investment/feasibility analysis report cards */}
-              <div className="lg:col-span-8 space-y-6" id="dialogue_history_container">
+            {/* Wide, immersive centered dialogue history with no left side assistants */}
+            {messages.length > 1 && (
+              <div className="w-full max-w-4xl mx-auto space-y-6" id="dialogue_history_container">
                 
-                <div className="bg-white border border-[#DDE8F5] rounded-[1.5rem] p-6 shadow-[0_4px_20px_rgba(34,86,160,0.02)] min-h-[500px] flex flex-col relative" id="dialogue_scrollable_card">
+                <div className="bg-white border border-slate-200/80 rounded-[1.5rem] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[500px] flex flex-col relative" id="dialogue_scrollable_card">
             
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
               <div className="flex items-center gap-2">
@@ -1074,8 +984,7 @@ export function Workstation() {
           </div>
 
         </div>
-
-      </div>
+            )}
           </>
         )}
 
